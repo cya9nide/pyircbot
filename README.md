@@ -31,7 +31,7 @@ A Python-based IRC bot designed for IRC servers with configurable server, channe
    ```bash
    # If you have git
    git clone <repository-url>
-   cd ronbot
+   cd pyircbot
    ```
 
 2. **Install dependencies**
@@ -120,7 +120,7 @@ For advanced users, you can also modify `config.py` directly to add additional c
 
 - **Environment Variables**: Set via `.env` file (recommended)
 - **Config File**: Direct modification of `config.py`
-- **Runtime Parameters**: Pass values directly to the `RonBOT()` constructor
+- **Runtime Parameters**: Pass values directly to the `PyIRCBot()` constructor
 
 The system will use values in this priority order:
 1. Runtime parameters (passed to constructor)
@@ -131,7 +131,7 @@ The system will use values in this priority order:
 
 1. **Start the bot**:
    ```bash
-   python3 ronbot.py
+   python3 pyircbot.py
    ```
 
 2. **Join your configured channel** on your configured IRC server
@@ -154,7 +154,7 @@ The system will use values in this priority order:
 
 ## Logging
 
-The bot creates a log file `ronbot.log` with detailed information about:
+The bot creates a log file `pyircbot.log` with detailed information about:
 - Connection status
 - Messages received
 - Commands processed
@@ -177,12 +177,12 @@ Press `Ctrl+C` to gracefully stop the bot. It will:
 
 ### Environment Variable Issues
 - Make sure you've copied `env.example` to `.env`
-- Verify the `.env` file is in the same directory as `ronbot.py`
+- Verify the `.env` file is in the same directory as `pyircbot.py`
 - Check that environment variable names match exactly (case-sensitive)
 - Ensure no extra spaces around the `=` sign in `.env` file
 
 ### Permission Issues
-- Make sure the script is executable: `chmod +x ronbot.py`
+- Make sure the script is executable: `chmod +x pyircbot.py`
 - Check if you have write permissions for log files
 
 ### Nickname Conflicts
@@ -193,7 +193,7 @@ Press `Ctrl+C` to gracefully stop the bot. It will:
 
 ### Adding New Commands
 
-1. Create a new method in the `RonBOT` class:
+1. Create a new method in the `PyIRCBot` class:
    ```python
    def cmd_newcommand(self, sender, message):
        return "Your response here"
@@ -241,7 +241,7 @@ This project is open source. Feel free to modify and distribute.
 ## Support
 
 If you encounter issues:
-1. Check the log file `ronbot.log`
+1. Check the log file `pyircbot.log`
 2. Verify your internet connection
 3. Ensure the IRC server and channel are accessible
 4. Check that Python 3.6+ is installed
