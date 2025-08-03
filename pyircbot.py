@@ -114,11 +114,6 @@ class PyIRCBot:
                 
                 self.stats['messages_received'] += 1
                 
-                # Track user messages for loudmouth stats
-                if sender not in self.stats['user_messages']:
-                    self.stats['user_messages'][sender] = 0
-                self.stats['user_messages'][sender] += 1
-                
                 # Handle PING
                 if command == 'PING':
                     self.send_raw(f"PONG :{message}")
@@ -143,6 +138,11 @@ class PyIRCBot:
     def handle_channel_message(self, sender, message):
         """Handle messages in the channel"""
         self.logger.info(f"<{sender}> {message}")
+        
+        # Track user messages for loudmouth stats (only channel messages)
+        if sender not in self.stats['user_messages']:
+            self.stats['user_messages'][sender] = 0
+        self.stats['user_messages'][sender] += 1
         
         # Check for bot commands
         for cmd, func in self.commands.items():
