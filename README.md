@@ -5,7 +5,7 @@ A Python-based IRC bot designed for IRC servers with configurable server, channe
 ## Features
 
 - **Basic IRC Functionality**: Connects to IRC server, joins channels, responds to messages
-- **Command System**: Responds to various commands with `!` prefix
+- **Command System**: Responds to various commands with `.` prefix
 - **Logging**: Comprehensive logging to both file and console
 - **Statistics**: Tracks bot usage and uptime
 - **Error Handling**: Robust error handling and graceful shutdown
