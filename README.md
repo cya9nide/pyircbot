@@ -32,7 +32,7 @@ Only tested with Gamesurge network.
 1. **Clone or download the project**
    ```bash
    # If you have git
-   git clone [<repository-url](https://github.com/cya9nide/pyircbot)>
+   git clone https://github.com/cya9nide/pyircbot
    cd pyircbot
    ```
 
