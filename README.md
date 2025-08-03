@@ -114,7 +114,7 @@ To modify these settings directly in code, edit the `PyIRCBot` class initializat
 | `BOT_NICKNAME` | `your_bot_nickname_here` | Bot's nickname |
 | `BOT_USERNAME` | `your_bot_username_here` | Bot's username |
 | `BOT_REALNAME` | `your_bot_realname_here` | Bot's real name |
-| `WEATHER_API_KEY` | (none) | OpenWeatherMap API key for weather features |
+| `WEATHER_API_KEY` | (none) | WeatherAPI.com API key for weather features |
 
 ### Advanced Configuration
 
