@@ -1,0 +1,565 @@
+#!/usr/bin/env python3
+"""
+RonBOT - IRC Bot
+A simple Python-based IRC bot with basic functionality
+"""
+
+import socket
+import threading
+import time
+import re
+import random
+import logging
+import urllib.parse
+import urllib.request
+import requests
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+import config
+
+class RonBOT:
+    def __init__(self, server=None, port=None, channel=None, 
+                 nickname=None, username=None, realname=None):
+        # Load environment variables
+        load_dotenv()
+        
+        # Use provided values or fall back to config values
+        self.server = server or config.IRC_SERVER
+        self.port = port or config.IRC_PORT
+        self.channel = channel or config.IRC_CHANNEL
+        self.nickname = nickname or config.BOT_NICKNAME
+        self.username = username or config.BOT_USERNAME
+        self.realname = realname or config.BOT_REALNAME
+        self.socket = None
+        self.running = False
+        
+        # Load API keys
+        self.weather_api_key = os.getenv('WEATHER_API_KEY')
+        
+        # Configure logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('ronbot.log'),
+                logging.StreamHandler()
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+        
+        # Bot commands and responses (using . prefix to avoid Chanserv conflicts)
+        self.commands = {
+            '.help': self.cmd_help,
+            '.time': self.cmd_time,
+            '.ping': self.cmd_ping,
+            '.dice': self.cmd_dice,
+            '.8ball': self.cmd_8ball,
+            '.weather': self.cmd_weather,
+            '.joke': self.cmd_joke,
+            '.stats': self.cmd_stats,
+            '.google': self.cmd_google
+        }
+        
+        # Bot statistics
+        self.stats = {
+            'messages_received': 0,
+            'commands_processed': 0,
+            'start_time': datetime.now()
+        }
+
+    def connect(self):
+        """Establish connection to IRC server"""
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.server, self.port))
+            self.logger.info(f"Connected to {self.server}:{self.port}")
+            
+            # Send registration commands
+            self.send_raw(f"NICK {self.nickname}")
+            self.send_raw(f"USER {self.username} 0 * :{self.realname}")
+            
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to connect: {e}")
+            return False
+
+    def send_raw(self, message):
+        """Send raw message to IRC server"""
+        try:
+            self.socket.send(f"{message}\r\n".encode('utf-8'))
+            self.logger.debug(f"Sent: {message}")
+        except Exception as e:
+            self.logger.error(f"Failed to send message: {e}")
+
+    def send_message(self, target, message):
+        """Send message to channel or user"""
+        self.send_raw(f"PRIVMSG {target} :{message}")
+
+    def join_channel(self, channel):
+        """Join IRC channel"""
+        self.send_raw(f"JOIN {channel}")
+        self.logger.info(f"Joined channel: {channel}")
+
+    def handle_message(self, line):
+        """Handle incoming IRC messages"""
+        # Parse IRC message
+        if line.startswith(':'):
+            parts = line.split(' ', 2)
+            if len(parts) >= 3:
+                sender = parts[0][1:].split('!')[0]
+                command = parts[1]
+                message = parts[2][1:] if parts[2].startswith(':') else parts[2]
+                
+                self.stats['messages_received'] += 1
+                
+                # Handle PING
+                if command == 'PING':
+                    self.send_raw(f"PONG :{message}")
+                    return
+                
+                # Handle PRIVMSG
+                if command == 'PRIVMSG':
+                    # The target is the second part after splitting the message
+                    target = parts[2].split(' :')[0] if ' :' in parts[2] else parts[2]
+                    actual_message = parts[2].split(' :', 1)[1] if ' :' in parts[2] else ''
+                    
+                    if target == self.channel:
+                        self.handle_channel_message(sender, actual_message)
+                    else:
+                        self.handle_private_message(sender, actual_message)
+        else:
+            # Handle non-prefixed messages (like PING from server)
+            if line.startswith('PING'):
+                pong_msg = line.replace('PING', 'PONG')
+                self.send_raw(pong_msg)
+
+    def handle_channel_message(self, sender, message):
+        """Handle messages in the channel"""
+        self.logger.info(f"<{sender}> {message}")
+        
+        # Check for bot commands
+        for cmd, func in self.commands.items():
+            if message.startswith(cmd):
+                self.logger.info(f"Command detected: {cmd} from {sender}")
+                self.stats['commands_processed'] += 1
+                response = func(sender, message)
+                if response:
+                    self.logger.info(f"Sending response: {response}")
+                    self.send_message(self.channel, response)
+                break
+        
+        # Check for links in the message (Link detection temporarily disabled)
+        # links = self.extract_links(message)
+        # for link in links:
+        #     summary = self.get_link_summary(link)
+        #     if summary:
+        #         # Add sender info to the summary
+        #         full_summary = f"{summary} - shared by {sender}"
+        #         self.send_message(self.channel, full_summary)
+
+    def handle_private_message(self, sender, message):
+        """Handle private messages"""
+        self.logger.info(f"PM from {sender}: {message}")
+        
+        # Check for bot commands in PM
+        for cmd, func in self.commands.items():
+            if message.startswith(cmd):
+                self.stats['commands_processed'] += 1
+                response = func(sender, message)
+                if response:
+                    self.send_message(sender, response)
+                break
+
+    # Bot command handlers
+    def cmd_help(self, sender, message):
+        """Show available commands"""
+        help_text = "Available commands: .help, .time, .ping, .dice, .8ball, .weather, .joke, .stats, .google"
+        return help_text
+
+    def cmd_time(self, sender, message):
+        """Show current time"""
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return f"Current time: {current_time}"
+
+    def cmd_ping(self, sender, message):
+        """Respond to ping"""
+        return f"Pong! Hello {sender}!"
+
+    def cmd_dice(self, sender, message):
+        """Roll dice (default 1d6, or specified like .dice 2d20)"""
+        try:
+            if message == '.dice':
+                return f"{sender} rolled: {random.randint(1, 6)}"
+            else:
+                # Parse dice notation like .dice 2d20
+                dice_match = re.search(r'\.dice (\d+)d(\d+)', message)
+                if dice_match:
+                    num_dice = int(dice_match.group(1))
+                    sides = int(dice_match.group(2))
+                    if num_dice > 10 or sides > 100:
+                        return "Dice too large! Max 10 dice, 100 sides."
+                    rolls = [random.randint(1, sides) for _ in range(num_dice)]
+                    total = sum(rolls)
+                    return f"{sender} rolled {num_dice}d{sides}: {rolls} (Total: {total})"
+                else:
+                    return "Usage: .dice or .dice XdY (e.g., .dice 2d20)"
+        except:
+            return "Invalid dice format! Use .dice or .dice XdY"
+
+    def cmd_8ball(self, sender, message):
+        """Magic 8-ball responses"""
+        responses = [
+            "It is certain.", "It is decidedly so.", "Without a doubt.",
+            "Yes, definitely.", "You may rely on it.", "As I see it, yes.",
+            "Most likely.", "Outlook good.", "Yes.", "Signs point to yes.",
+            "Reply hazy, try again.", "Ask again later.", "Better not tell you now.",
+            "Cannot predict now.", "Concentrate and ask again.",
+            "Don't count on it.", "My reply is no.", "My sources say no.",
+            "Outlook not so good.", "Very doubtful."
+        ]
+        return f"Magic 8-Ball says: {random.choice(responses)}"
+
+    def cmd_weather(self, sender, message):
+        """Weather command using WeatherAPI.com with forecast support"""
+        try:
+            # Extract location and forecast type from command
+            parts = message.replace('.weather', '').strip().split()
+            if not parts:
+                return "Usage: .weather <city> or .weather <city> forecast <hours/days> (e.g., .weather London forecast 5 hours)"
+            
+            location = parts[0]
+            forecast_type = None
+            forecast_period = None
+            
+            # Check for forecast parameters
+            if len(parts) >= 3 and parts[1].lower() == 'forecast':
+                try:
+                    forecast_period = int(parts[2])
+                    if len(parts) >= 4:
+                        forecast_type = parts[3].lower()
+                    else:
+                        forecast_type = 'hours'  # Default to hours
+                except ValueError:
+                    return f"Sorry {sender}, invalid forecast period. Use a number (e.g., .weather London forecast 5 hours)"
+            
+            if not self.weather_api_key:
+                return f"Sorry {sender}, weather API key not configured."
+            
+            # Determine API endpoint based on forecast type
+            if forecast_type == 'days':
+                url = "http://api.weatherapi.com/v1/forecast.json"
+                params = {
+                    'key': self.weather_api_key,
+                    'q': location,
+                    'days': min(forecast_period, 7),  # Max 7 days
+                    'aqi': 'no'
+                }
+            elif forecast_type == 'hours':
+                url = "http://api.weatherapi.com/v1/forecast.json"
+                params = {
+                    'key': self.weather_api_key,
+                    'q': location,
+                    'hours': min(forecast_period, 24),  # Max 24 hours
+                    'aqi': 'no'
+                }
+            else:
+                # Current weather
+                url = "http://api.weatherapi.com/v1/current.json"
+                params = {
+                    'key': self.weather_api_key,
+                    'q': location,
+                    'aqi': 'no'
+                }
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if forecast_type == 'days':
+                return self._format_daily_forecast(data, location, forecast_period)
+            elif forecast_type == 'hours':
+                return self._format_hourly_forecast(data, location, forecast_period)
+            else:
+                return self._format_current_weather(data)
+            
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Weather API error: {e}")
+            return f"Sorry {sender}, couldn't get weather for that location."
+        except KeyError as e:
+            self.logger.error(f"Weather data parsing error: {e}")
+            return f"Sorry {sender}, weather data format error."
+        except Exception as e:
+            self.logger.error(f"Weather command error: {e}")
+            return f"Sorry {sender}, weather command failed."
+
+    def _format_current_weather(self, data):
+        """Format current weather data"""
+        location_name = data['location']['name']
+        country = data['location']['country']
+        temp_c = data['current']['temp_c']
+        temp_f = data['current']['temp_f']
+        condition = data['current']['condition']['text']
+        humidity = data['current']['humidity']
+        wind_kph = data['current']['wind_kph']
+        wind_mph = data['current']['wind_mph']
+        
+        return f"🌤️ {location_name}, {country}: {temp_f}°F ({temp_c}°C), {condition}, Humidity: {humidity}%, Wind: {wind_mph} mph ({wind_kph} km/h)"
+
+    def _format_hourly_forecast(self, data, location, hours):
+        """Format hourly forecast data"""
+        location_name = data['location']['name']
+        country = data['location']['country']
+        
+        forecast_parts = []
+        for i, hour_data in enumerate(data['forecast']['forecastday'][0]['hour'][:hours]):
+            time = hour_data['time'].split(' ')[1][:5]  # Extract HH:MM
+            temp_f = hour_data['temp_f']
+            temp_c = hour_data['temp_c']
+            condition = hour_data['condition']['text']
+            
+            forecast_parts.append(f"{time}: {temp_f}°F ({temp_c}°C), {condition}")
+        
+        return f"🌤️ {location_name}, {country} - {hours}h forecast: {' | '.join(forecast_parts)}"
+
+    def _format_daily_forecast(self, data, location, days):
+        """Format daily forecast data"""
+        location_name = data['location']['name']
+        country = data['location']['country']
+        
+        forecast_parts = []
+        for i, day_data in enumerate(data['forecast']['forecastday'][:days]):
+            date = day_data['date']
+            max_f = day_data['day']['maxtemp_f']
+            min_f = day_data['day']['mintemp_f']
+            max_c = day_data['day']['maxtemp_c']
+            min_c = day_data['day']['mintemp_c']
+            condition = day_data['day']['condition']['text']
+            
+            # Format date as MM/DD
+            date_obj = datetime.strptime(date, '%Y-%m-%d')
+            date_str = date_obj.strftime('%m/%d')
+            
+            forecast_parts.append(f"{date_str}: {max_f}°F/{min_f}°F ({max_c}°C/{min_c}°C), {condition}")
+        
+        return f"🌤️ {location_name}, {country} - {days}d forecast: {' | '.join(forecast_parts)}"
+
+    def cmd_joke(self, sender, message):
+        """Tell a random joke"""
+        jokes = [
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "Why did the scarecrow win an award? He was outstanding in his field!",
+            "What do you call a fake noodle? An impasta!",
+            "Why did the math book look so sad? Because it had too many problems!",
+            "What do you call a bear with no teeth? A gummy bear!",
+            "Why don't eggs tell jokes? They'd crack each other up!",
+            "What do you call a dinosaur that crashes his car? Tyrannosaurus wrecks!",
+            "Why did the cookie go to the doctor? Because it was feeling crumbly!"
+        ]
+        return f"{random.choice(jokes)}"
+
+    def cmd_stats(self, sender, message):
+        """Show bot statistics"""
+        uptime = datetime.now() - self.stats['start_time']
+        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+        return f"RonBOT Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']}"
+
+    def cmd_google(self, sender, message):
+        """Google search command with top 3 results using DuckDuckGo API"""
+        try:
+            query = message.replace('.google', '').strip()
+            if not query:
+                return "Usage: .google <search term>"
+            
+            # Use DuckDuckGo Instant Answer API (no API key required)
+            ddg_url = "https://api.duckduckgo.com/"
+            params = {
+                'q': query,
+                'format': 'json',
+                'no_html': '1',
+                'skip_disambig': '1'
+            }
+            
+            response = requests.get(ddg_url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            results = []
+            
+            # Add instant answer if available
+            if data.get('AbstractText'):
+                abstract = data['AbstractText'][:100] + "..." if len(data['AbstractText']) > 100 else data['AbstractText']
+                results.append(f"1. {abstract} - {data.get('AbstractURL', 'No URL')}")
+            
+            # Add related topics
+            for i, topic in enumerate(data.get('RelatedTopics', [])[:3-len(results)]):
+                if isinstance(topic, dict) and topic.get('Text'):
+                    text = topic['Text'][:80] + "..." if len(topic['Text']) > 80 else topic['Text']
+                    results.append(f"{len(results)+1}. {text}")
+            
+            # If we don't have enough results, add some generic suggestions
+            while len(results) < 3:
+                results.append(f"{len(results)+1}. Search for '{query}' on Google")
+            
+            if results:
+                return f"🔍 Search results for '{query}': {' | '.join(results)}"
+            else:
+                # Fallback to Google search URL
+                encoded_query = urllib.parse.quote(query)
+                return f"🔍 Search for '{query}': https://www.google.com/search?q={encoded_query}"
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Search API error: {e}")
+            encoded_query = urllib.parse.quote(query)
+            return f"🔍 Search for '{query}': https://www.google.com/search?q={encoded_query}"
+        except Exception as e:
+            self.logger.error(f"Search error: {e}")
+            return "Sorry, search failed."
+
+    def extract_links(self, message):
+        """Extract URLs from message"""
+        url_pattern = r'https?://[^\s]+'
+        return re.findall(url_pattern, message)
+
+    def is_x_twitter_link(self, url):
+        """Check if URL is X/Twitter link"""
+        return 'x.com' in url or 'twitter.com' in url
+
+    def is_youtube_link(self, url):
+        """Check if URL is YouTube link"""
+        return 'youtube.com' in url or 'youtu.be' in url
+
+    def get_link_summary(self, url):
+        """Get a detailed summary of a link by scraping the page"""
+        try:
+            # Set up headers to avoid being blocked
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # Make the request
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            if self.is_youtube_link(url):
+                return self._parse_youtube_video(url, response.text)
+            else:
+                return self._parse_general_link(url, response.text)
+                
+        except requests.exceptions.Timeout:
+            return f"⏰ Link timeout: {url}"
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Request error for {url}: {e}")
+            return f"❌ Link error: {url}"
+        except Exception as e:
+            self.logger.error(f"Link summary error for {url}: {e}")
+            return f"❌ Link error: {url}"
+
+    def _parse_youtube_video(self, url, html_content):
+        """Parse YouTube video for detailed information using oEmbed API"""
+        try:
+            # Extract video ID from URL
+            video_id_match = re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)', url)
+            if not video_id_match:
+                return f"📺 YouTube video: {url}"
+            
+            video_id = video_id_match.group(1)
+            
+            # Use YouTube's oEmbed API to get video info
+            oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(oembed_url, headers=headers, timeout=5)
+            response.raise_for_status()
+            
+            data = response.json()
+            title = data.get('title', 'Unknown Title')
+            author = data.get('author_name', 'Unknown Channel')
+            
+            # Clean up title
+            title = re.sub(r'\s+', ' ', title)
+            title = title[:80] + "..." if len(title) > 80 else title
+            
+            return f"📺 YouTube video: {title} - by {author}"
+            
+        except Exception as e:
+            self.logger.error(f"YouTube parsing error: {e}")
+            return f"📺 YouTube video: {url}"
+
+
+
+    def _parse_general_link(self, url, html_content):
+        """Parse general web links"""
+        try:
+            # Extract title
+            title_match = re.search(r'<title[^>]*>([^<]+)</title>', html_content, re.IGNORECASE)
+            title = title_match.group(1).strip() if title_match else "No title found"
+            
+            # Clean up title
+            title = re.sub(r'\s+', ' ', title)
+            title = title[:80] + "..." if len(title) > 80 else title
+            
+            return f"🔗 {title}"
+            
+        except Exception as e:
+            self.logger.error(f"General link parsing error: {e}")
+            return f"🔗 Link: {url}"
+
+    def run(self):
+        """Main bot loop"""
+        if not self.connect():
+            return
+        
+        self.running = True
+        buffer = ""
+        
+        try:
+            while self.running:
+                data = self.socket.recv(1024).decode('utf-8')
+                if not data:
+                    break
+                
+                buffer += data
+                lines = buffer.split('\r\n')
+                buffer = lines.pop()  # Keep incomplete line in buffer
+                
+                for line in lines:
+                    if line.strip():
+                        self.handle_message(line)
+                        
+                        # Handle server responses
+                        if "001" in line:  # Welcome message
+                            self.join_channel(self.channel)
+                        elif "433" in line:  # Nickname in use
+                            self.nickname += str(random.randint(1, 999))
+                            self.send_raw(f"NICK {self.nickname}")
+                        elif "PING" in line:
+                            pong_msg = line.replace("PING", "PONG")
+                            self.send_raw(pong_msg)
+                            
+        except KeyboardInterrupt:
+            self.logger.info("Bot interrupted by user")
+        except Exception as e:
+            self.logger.error(f"Error in main loop: {e}")
+        finally:
+            self.cleanup()
+
+    def cleanup(self):
+        """Clean up bot resources"""
+        self.running = False
+        if self.socket:
+            self.send_raw("QUIT :RonBOT signing off!")
+            self.socket.close()
+        self.logger.info("Bot shutdown complete")
+
+def main():
+    """Main entry point"""
+    print("Starting RonBOT...")
+    bot = RonBOT()  # Will use config values from config.py
+    bot.run()
+
+if __name__ == "__main__":
+    main() 
