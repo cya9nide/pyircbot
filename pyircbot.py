@@ -226,22 +226,39 @@ class PyIRCBot:
             # Extract location and forecast type from command
             parts = message.replace('.weather', '').strip().split()
             if not parts:
-                return "Usage: .weather <city> or .weather <city> forecast <hours/days> (e.g., .weather London forecast 5 hours)"
+                return "Usage: .weather <city> or .weather <city> forecast <hours/days> (e.g., .weather London forecast 5 hours). Supports city, state/country: .weather Hollywood FL, .weather Manchester UK"
             
-            location = parts[0]
+            # Parse location with state/country support
+            location_parts = []
             forecast_type = None
             forecast_period = None
             
-            # Check for forecast parameters
-            if len(parts) >= 3 and parts[1].lower() == 'forecast':
-                try:
-                    forecast_period = int(parts[2])
-                    if len(parts) >= 4:
-                        forecast_type = parts[3].lower()
-                    else:
-                        forecast_type = 'hours'  # Default to hours
-                except ValueError:
-                    return f"Sorry {sender}, invalid forecast period. Use a number (e.g., .weather London forecast 5 hours)"
+            # Find where forecast parameters start
+            forecast_start = -1
+            for i, part in enumerate(parts):
+                if part.lower() == 'forecast':
+                    forecast_start = i
+                    break
+            
+            if forecast_start != -1:
+                # Location is everything before 'forecast'
+                location_parts = parts[:forecast_start]
+                # Parse forecast parameters
+                if len(parts) > forecast_start + 1:
+                    try:
+                        forecast_period = int(parts[forecast_start + 1])
+                        if len(parts) > forecast_start + 2:
+                            forecast_type = parts[forecast_start + 2].lower()
+                        else:
+                            forecast_type = 'hours'  # Default to hours
+                    except ValueError:
+                        return f"Sorry {sender}, invalid forecast period. Use a number (e.g., .weather London forecast 5 hours)"
+            else:
+                # No forecast, location is all parts
+                location_parts = parts
+            
+            # Build location string with proper formatting
+            location = self._format_location_query(location_parts)
             
             if not self.weather_api_key:
                 return f"Sorry {sender}, weather API key not configured."
@@ -293,10 +310,106 @@ class PyIRCBot:
             self.logger.error(f"Weather command error: {e}")
             return f"Sorry {sender}, weather command failed."
 
+    def _format_location_query(self, location_parts):
+        """Format location parts into a proper query string for the weather API"""
+        if not location_parts:
+            return ""
+        
+        # Handle various formats:
+        # "Hollywood, FL" -> "Hollywood, FL"
+        # "Hollywood FL" -> "Hollywood, FL" 
+        # "Manchester, UK" -> "Manchester, UK"
+        # "Manchester, CT" -> "Manchester, CT"
+        # "New York, NY" -> "New York, NY"
+        
+        location_str = " ".join(location_parts)
+        
+        # If there's a comma, it's already properly formatted
+        if ',' in location_str:
+            return location_str
+        
+        # Check if the last part looks like a state abbreviation (2 letters)
+        if len(location_parts) >= 2:
+            last_part = location_parts[-1].upper()
+            # Common state abbreviations
+            state_abbrevs = {
+                'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+                'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+                'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+                'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+                'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+            }
+            
+            if last_part in state_abbrevs:
+                # Format as "City, State"
+                city = " ".join(location_parts[:-1])
+                return f"{city}, {last_part}"
+        
+        # Check if the last part looks like a country code (2-3 letters)
+        if len(location_parts) >= 2:
+            last_part = location_parts[-1].upper()
+            # Common country codes
+            country_codes = {
+                'US', 'UK', 'CA', 'AU', 'DE', 'FR', 'IT', 'ES', 'JP', 'CN',
+                'IN', 'BR', 'MX', 'RU', 'KR', 'NL', 'SE', 'NO', 'DK', 'FI',
+                'CH', 'AT', 'BE', 'IE', 'NZ', 'ZA', 'SG', 'MY', 'TH', 'VN'
+            }
+            
+            if last_part in country_codes:
+                # Format as "City, Country"
+                city = " ".join(location_parts[:-1])
+                return f"{city}, {last_part}"
+        
+        # If no special formatting needed, return as is
+        return location_str
+
+    def _shorten_country_name(self, country_name):
+        """Shorten country names for cleaner display"""
+        country_mapping = {
+            'United States of America': 'USA',
+            'United Kingdom': 'UK',
+            'United States': 'USA',
+            'Great Britain': 'UK',
+            'England': 'UK',
+            'Scotland': 'UK',
+            'Wales': 'UK',
+            'Northern Ireland': 'UK',
+            'Canada': 'CA',
+            'Australia': 'AU',
+            'Germany': 'DE',
+            'France': 'FR',
+            'Italy': 'IT',
+            'Spain': 'ES',
+            'Japan': 'JP',
+            'China': 'CN',
+            'India': 'IN',
+            'Brazil': 'BR',
+            'Mexico': 'MX',
+            'Russia': 'RU',
+            'South Korea': 'KR',
+            'Netherlands': 'NL',
+            'Sweden': 'SE',
+            'Norway': 'NO',
+            'Denmark': 'DK',
+            'Finland': 'FI',
+            'Switzerland': 'CH',
+            'Austria': 'AT',
+            'Belgium': 'BE',
+            'Ireland': 'IE',
+            'New Zealand': 'NZ',
+            'South Africa': 'ZA',
+            'Singapore': 'SG',
+            'Malaysia': 'MY',
+            'Thailand': 'TH',
+            'Vietnam': 'VN'
+        }
+        
+        return country_mapping.get(country_name, country_name)
+
     def _format_current_weather(self, data):
         """Format current weather data"""
         location_name = data['location']['name']
-        country = data['location']['country']
+        country = self._shorten_country_name(data['location']['country'])
         temp_c = data['current']['temp_c']
         temp_f = data['current']['temp_f']
         condition = data['current']['condition']['text']
@@ -309,7 +422,7 @@ class PyIRCBot:
     def _format_hourly_forecast(self, data, location, hours):
         """Format hourly forecast data"""
         location_name = data['location']['name']
-        country = data['location']['country']
+        country = self._shorten_country_name(data['location']['country'])
         
         forecast_parts = []
         for i, hour_data in enumerate(data['forecast']['forecastday'][0]['hour'][:hours]):
@@ -325,7 +438,7 @@ class PyIRCBot:
     def _format_daily_forecast(self, data, location, days):
         """Format daily forecast data"""
         location_name = data['location']['name']
-        country = data['location']['country']
+        country = self._shorten_country_name(data['location']['country'])
         
         forecast_parts = []
         for i, day_data in enumerate(data['forecast']['forecastday'][:days]):

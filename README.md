@@ -21,7 +21,7 @@ Only tested with Gamesurge network.
 | `.ping` | Responds with "Pong!" |
 | `.dice` | Rolls a 6-sided die (or custom: `.dice 2d20`) |
 | `.8ball` | Magic 8-ball responses |
-| `.weather` | Current weather info |
+| `.weather` | Current weather info (supports city, state/country) |
 | `.weather forecast` | Weather forecast (hours/days) |
 | `.joke` | Tells a random joke |
 | `.stats` | Shows bot statistics and uptime |
@@ -149,6 +149,8 @@ The system will use values in this priority order:
 
 4. **Weather Examples:**
    - `.weather London` - Current weather
+   - `.weather Hollywood FL` - City with state
+   - `.weather Manchester UK` - City with country
    - `.weather London forecast 5 hours` - 5-hour forecast
    - `.weather London forecast 3 days` - 3-day forecast
 
