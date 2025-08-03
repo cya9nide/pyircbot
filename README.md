@@ -1,6 +1,7 @@
 # PyIRCBot - IRC Bot
 
 A Python-based IRC bot designed for IRC servers with configurable server, channel, and bot identity.
+WIP - google not working as intended, others.  Weather using weatherapi.com API 
 
 ## Features
 
