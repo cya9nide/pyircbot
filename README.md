@@ -47,7 +47,7 @@ WIP - google not working as intended, others.  Weather using weatherapi.com API
    
    # Edit the .env file with your desired settings
    # IMPORTANT: Replace all placeholder values with your actual settings
-   nano .env  # or use your preferred editor
+   vi .env  # or use your preferred editor
    ```
 
 4. **Make the script executable**
