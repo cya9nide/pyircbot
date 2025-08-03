@@ -1,4 +1,4 @@
-# RonBOT IRC Bot Requirements
+# PyIRCBot IRC Bot Requirements
 
 # Core dependencies
 requests>=2.25.1  # For web scraping and API calls

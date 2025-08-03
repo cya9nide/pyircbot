@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RonBOT - IRC Bot
+PyIRCBot - IRC Bot
 A simple Python-based IRC bot with basic functionality
 """
 
@@ -18,7 +18,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import config
 
-class RonBOT:
+class PyIRCBot:
     def __init__(self, server=None, port=None, channel=None, 
                  nickname=None, username=None, realname=None):
         # Load environment variables
@@ -42,7 +42,7 @@ class RonBOT:
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('ronbot.log'),
+                logging.FileHandler('pyircbot.log'),
                 logging.StreamHandler()
             ]
         )
@@ -362,7 +362,7 @@ class RonBOT:
         """Show bot statistics"""
         uptime = datetime.now() - self.stats['start_time']
         uptime_str = str(uptime).split('.')[0]  # Remove microseconds
-        return f"RonBOT Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']}"
+        return f"PyIRCBot Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']}"
 
     def cmd_google(self, sender, message):
         """Google search command with top 3 results using DuckDuckGo API"""
@@ -551,14 +551,14 @@ class RonBOT:
         """Clean up bot resources"""
         self.running = False
         if self.socket:
-            self.send_raw("QUIT :RonBOT signing off!")
+            self.send_raw("QUIT :PyIRCBot signing off!")
             self.socket.close()
         self.logger.info("Bot shutdown complete")
 
 def main():
     """Main entry point"""
-    print("Starting RonBOT...")
-    bot = RonBOT()  # Will use config values from config.py
+    print("Starting PyIRCBot...")
+    bot = PyIRCBot()  # Will use config values from config.py
     bot.run()
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# RonBOT Configuration File
+# PyIRCBot Configuration File
 # Modify these settings to customize your bot
 import os
 from dotenv import load_dotenv
@@ -18,7 +18,7 @@ BOT_REALNAME = os.getenv('BOT_REALNAME', 'your_bot_realname_here')
 
 # Logging Settings
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_FILE = os.getenv('LOG_FILE', 'ronbot.log')
+LOG_FILE = os.getenv('LOG_FILE', 'pyircbot.log')
 
 # Bot Behavior
 COMMAND_PREFIX = os.getenv('COMMAND_PREFIX', '!')  # Commands start with this character

@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-Test script for RonBOT
+Test script for PyIRCBot
 Tests bot functionality without connecting to IRC
 """
 
 import sys
 import os
 
-# Add current directory to path to import ronbot
+# Add current directory to path to import pyircbot
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from ronbot import RonBOT
+from pyircbot import PyIRCBot
 
 def test_bot_commands():
     """Test bot command functionality"""
-    print("Testing RonBOT commands...")
+    print("Testing PyIRCBot commands...")
     
     # Create bot instance (without connecting)
-    bot = RonBOT()
+    bot = PyIRCBot()
     
     # Test commands
     test_commands = [
@@ -89,7 +89,7 @@ def test_bot_initialization():
     print("-" * 50)
     
     try:
-        bot = RonBOT()
+        bot = PyIRCBot()
         print(f"✓ Bot created successfully")
         print(f"  Server: {bot.server}")
         print(f"  Port: {bot.port}")
@@ -103,7 +103,7 @@ def test_bot_initialization():
 
 def main():
     """Main test function"""
-    print("RonBOT Test Suite")
+    print("PyIRCBot Test Suite")
     print("=" * 50)
     
     # Test initialization

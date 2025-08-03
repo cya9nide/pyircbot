@@ -1,8 +1,8 @@
-# RonBOT IRC Bot - Git Ignore File
+# PyIRCBot IRC Bot - Git Ignore File
 
 # Log files
 *.log
-ronbot.log
+pyircbot.log
 
 # Python cache files
 __pycache__/

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# RonBOT Startup Script
+# PyIRCBot Startup Script
 # This script starts the IRC bot with proper error handling
 
-echo "Starting RonBOT IRC Bot..."
+echo "Starting PyIRCBot IRC Bot..."
 echo "Configuration will be loaded from environment variables"
 echo "Make sure you have set up your .env file"
 echo ""
@@ -23,21 +23,21 @@ fi
 echo "Using Python: $($PYTHON_CMD --version)"
 
 # Check if the bot script exists
-if [ ! -f "ronbot.py" ]; then
-    echo "Error: ronbot.py not found in current directory"
+if [ ! -f "pyircbot.py" ]; then
+    echo "Error: pyircbot.py not found in current directory"
     echo "Please run this script from the bot directory"
     exit 1
 fi
 
 # Make the bot script executable
-chmod +x ronbot.py
+chmod +x pyircbot.py
 
 # Start the bot
-echo "Launching RonBOT..."
+echo "Launching PyIRCBot..."
 echo "Press Ctrl+C to stop the bot"
 echo ""
 
-$PYTHON_CMD ronbot.py
+$PYTHON_CMD pyircbot.py
 
 echo ""
-echo "RonBOT has stopped." 
+echo "PyIRCBot has stopped." 

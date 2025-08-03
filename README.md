@@ -1,4 +1,4 @@
-# BOTJon - IRC Bot
+# PyIRCBot - IRC Bot
 
 A Python-based IRC bot designed for IRC servers with configurable server, channel, and bot identity.
 
@@ -51,12 +51,12 @@ A Python-based IRC bot designed for IRC servers with configurable server, channe
 
 4. **Make the script executable**
    ```bash
-   chmod +x ronbot.py
+   chmod +x pyircbot.py
    ```
 
 5. **Run the bot**
    ```bash
-   python3 ronbot.py
+   python3 pyircbot.py
    ```
 
 ## Configuration
@@ -89,10 +89,10 @@ The bot uses environment variables for configuration. You can set these up in tw
 
 ### Option 2: Direct Code Modification
 
-To modify these settings directly in code, edit the `RonBOT` class initialization in `ronbot.py`:
+To modify these settings directly in code, edit the `PyIRCBot` class initialization in `pyircbot.py`:
 
  ```python
- bot = RonBOT(
+ bot = PyIRCBot(
      server="your_irc_server_here",
      port=6667,
      channel="your_channel_here",
