@@ -65,7 +65,8 @@ class PyIRCBot:
         self.stats = {
             'messages_received': 0,
             'commands_processed': 0,
-            'start_time': datetime.now()
+            'start_time': datetime.now(),
+            'user_messages': {}  # Track messages per user for loudmouth
         }
 
     def connect(self):
@@ -112,6 +113,11 @@ class PyIRCBot:
                 message = parts[2][1:] if parts[2].startswith(':') else parts[2]
                 
                 self.stats['messages_received'] += 1
+                
+                # Track user messages for loudmouth stats
+                if sender not in self.stats['user_messages']:
+                    self.stats['user_messages'][sender] = 0
+                self.stats['user_messages'][sender] += 1
                 
                 # Handle PING
                 if command == 'PING':
@@ -494,7 +500,15 @@ class PyIRCBot:
         """Show bot statistics"""
         uptime = datetime.now() - self.stats['start_time']
         uptime_str = str(uptime).split('.')[0]  # Remove microseconds
-        return f"PyIRCBot Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']}"
+        
+        # Find the loudmouth (user with most messages)
+        loudmouth = "None"
+        loudmouth_count = 0
+        if self.stats['user_messages']:
+            loudmouth = max(self.stats['user_messages'], key=self.stats['user_messages'].get)
+            loudmouth_count = self.stats['user_messages'][loudmouth]
+        
+        return f"PyIRCBot Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']}, Loudmouth: {loudmouth} ({loudmouth_count} messages)"
 
     def cmd_google(self, sender, message):
         """Google search command with top 3 results using DuckDuckGo API"""
