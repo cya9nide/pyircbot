@@ -406,10 +406,20 @@ class PyIRCBot:
         
         return country_mapping.get(country_name, country_name)
 
+    def _format_location_display(self, city, region, country):
+        """Format location display with state/region information"""
+        if region and region != city:
+            # If we have a region/state and it's different from the city, include it
+            return f"{city}, {region}, {country}"
+        else:
+            # Just city and country
+            return f"{city}, {country}"
+
     def _format_current_weather(self, data):
         """Format current weather data"""
         location_name = data['location']['name']
         country = self._shorten_country_name(data['location']['country'])
+        region = data['location'].get('region', '')  # State/province if available
         temp_c = data['current']['temp_c']
         temp_f = data['current']['temp_f']
         condition = data['current']['condition']['text']
@@ -417,12 +427,16 @@ class PyIRCBot:
         wind_kph = data['current']['wind_kph']
         wind_mph = data['current']['wind_mph']
         
-        return f"🌤️ {location_name}, {country}: {temp_f}°F ({temp_c}°C), {condition}, Humidity: {humidity}%, Wind: {wind_mph} mph ({wind_kph} km/h)"
+        # Format location with state if available
+        location_display = self._format_location_display(location_name, region, country)
+        
+        return f"🌤️ {location_display}: {temp_f}°F ({temp_c}°C), {condition}, Humidity: {humidity}%, Wind: {wind_mph} mph ({wind_kph} km/h)"
 
     def _format_hourly_forecast(self, data, location, hours):
         """Format hourly forecast data"""
         location_name = data['location']['name']
         country = self._shorten_country_name(data['location']['country'])
+        region = data['location'].get('region', '')  # State/province if available
         
         forecast_parts = []
         for i, hour_data in enumerate(data['forecast']['forecastday'][0]['hour'][:hours]):
@@ -433,12 +447,15 @@ class PyIRCBot:
             
             forecast_parts.append(f"{time}: {temp_f}°F ({temp_c}°C), {condition}")
         
-        return f"🌤️ {location_name}, {country} - {hours}h forecast: {' | '.join(forecast_parts)}"
+        # Format location with state if available
+        location_display = self._format_location_display(location_name, region, country)
+        return f"🌤️ {location_display} - {hours}h forecast: {' | '.join(forecast_parts)}"
 
     def _format_daily_forecast(self, data, location, days):
         """Format daily forecast data"""
         location_name = data['location']['name']
         country = self._shorten_country_name(data['location']['country'])
+        region = data['location'].get('region', '')  # State/province if available
         
         forecast_parts = []
         for i, day_data in enumerate(data['forecast']['forecastday'][:days]):
@@ -455,7 +472,9 @@ class PyIRCBot:
             
             forecast_parts.append(f"{date_str}: {max_f}°F/{min_f}°F ({max_c}°C/{min_c}°C), {condition}")
         
-        return f"🌤️ {location_name}, {country} - {days}d forecast: {' | '.join(forecast_parts)}"
+        # Format location with state if available
+        location_display = self._format_location_display(location_name, region, country)
+        return f"🌤️ {location_display} - {days}d forecast: {' | '.join(forecast_parts)}"
 
     def cmd_joke(self, sender, message):
         """Tell a random joke"""
