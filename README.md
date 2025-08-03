@@ -56,12 +56,12 @@ The bot creates monthly log files in the format `pyircbot_MM-YYYY.log` (e.g., `p
 
 4. **Make the script executable**
    ```bash
-   chmod +x pyircbot.py
+   chmod +x start_bot.sh
    ```
 
 5. **Run the bot**
    ```bash
-   python3 pyircbot.py
+   ./start_bot.sh
    ```
 
 ## Configuration
@@ -136,7 +136,7 @@ The system will use values in this priority order:
 
 1. **Start the bot**:
    ```bash
-   python3 pyircbot.py
+   ./start_bot.sh
    ```
 
 2. **Join your configured channel** on your configured IRC server
