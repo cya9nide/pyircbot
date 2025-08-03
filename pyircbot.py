@@ -14,9 +14,10 @@ import urllib.parse
 import urllib.request
 import requests
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import config
+import calendar
 
 class PyIRCBot:
     def __init__(self, server=None, port=None, channel=None, 
@@ -37,16 +38,11 @@ class PyIRCBot:
         # Load API keys
         self.weather_api_key = os.getenv('WEATHER_API_KEY')
         
-        # Configure logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler('pyircbot.log'),
-                logging.StreamHandler()
-            ]
-        )
-        self.logger = logging.getLogger(__name__)
+        # Get current month for tracking
+        self.current_month = datetime.now().strftime('%m-%Y')
+        
+        # Configure logging with monthly rotation
+        self.setup_logging()
         
         # Bot commands and responses (using . prefix to avoid Chanserv conflicts)
         self.commands = {
@@ -62,13 +58,68 @@ class PyIRCBot:
             '.topusers': self.cmd_topusers
         }
         
-        # Bot statistics
+        # Bot statistics with monthly tracking
         self.stats = {
             'messages_received': 0,
             'commands_processed': 0,
             'start_time': datetime.now(),
-            'user_messages': {}  # Track messages per user for loudmouth
+            'user_messages': {},  # Track messages per user for loudmouth
+            'monthly_stats': {
+                self.current_month: {
+                    'messages_received': 0,
+                    'commands_processed': 0,
+                    'user_messages': {}
+                }
+            }
         }
+
+    def setup_logging(self):
+        """Setup logging with monthly rotation"""
+        log_filename = f'pyircbot_{self.current_month}.log'
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_filename),
+                logging.StreamHandler()
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+
+    def check_month_change(self):
+        """Check if month has changed and roll logs if necessary"""
+        current_month = datetime.now().strftime('%m-%Y')
+        if current_month != self.current_month:
+            self.logger.info(f"Month changed from {self.current_month} to {current_month}. Rolling logs and stats.")
+            
+            # Archive old log file
+            old_log_filename = f'pyircbot_{self.current_month}.log'
+            if os.path.exists(old_log_filename):
+                archive_filename = f'pyircbot_{self.current_month}_archive.log'
+                os.rename(old_log_filename, archive_filename)
+                self.logger.info(f"Archived old log to {archive_filename}")
+            
+            # Update current month
+            self.current_month = current_month
+            
+            # Setup new logging
+            self.setup_logging()
+            
+            # Initialize new month stats
+            if current_month not in self.stats['monthly_stats']:
+                self.stats['monthly_stats'][current_month] = {
+                    'messages_received': 0,
+                    'commands_processed': 0,
+                    'user_messages': {}
+                }
+
+    def get_monthly_stats(self):
+        """Get current month's statistics"""
+        return self.stats['monthly_stats'].get(self.current_month, {
+            'messages_received': 0,
+            'commands_processed': 0,
+            'user_messages': {}
+        })
 
     def connect(self):
         """Establish connection to IRC server"""
@@ -105,6 +156,9 @@ class PyIRCBot:
 
     def handle_message(self, line):
         """Handle incoming IRC messages"""
+        # Check for month change first
+        self.check_month_change()
+        
         # Parse IRC message
         if line.startswith(':'):
             parts = line.split(' ', 2)
@@ -114,6 +168,10 @@ class PyIRCBot:
                 message = parts[2][1:] if parts[2].startswith(':') else parts[2]
                 
                 self.stats['messages_received'] += 1
+                
+                # Update monthly stats
+                monthly_stats = self.get_monthly_stats()
+                monthly_stats['messages_received'] += 1
                 
                 # Handle PING
                 if command == 'PING':
@@ -145,11 +203,18 @@ class PyIRCBot:
             self.stats['user_messages'][sender] = 0
         self.stats['user_messages'][sender] += 1
         
+        # Track monthly user messages
+        monthly_stats = self.get_monthly_stats()
+        if sender not in monthly_stats['user_messages']:
+            monthly_stats['user_messages'][sender] = 0
+        monthly_stats['user_messages'][sender] += 1
+        
         # Check for bot commands
         for cmd, func in self.commands.items():
             if message.startswith(cmd):
                 self.logger.info(f"Command detected: {cmd} from {sender}")
                 self.stats['commands_processed'] += 1
+                monthly_stats['commands_processed'] += 1
                 response = func(sender, message)
                 if response:
                     self.logger.info(f"Sending response: {response}")
@@ -173,6 +238,8 @@ class PyIRCBot:
         for cmd, func in self.commands.items():
             if message.startswith(cmd):
                 self.stats['commands_processed'] += 1
+                monthly_stats = self.get_monthly_stats()
+                monthly_stats['commands_processed'] += 1
                 response = func(sender, message)
                 if response:
                     self.send_message(sender, response)
@@ -502,14 +569,24 @@ class PyIRCBot:
         uptime = datetime.now() - self.stats['start_time']
         uptime_str = str(uptime).split('.')[0]  # Remove microseconds
         
-        # Find the loudmouth (user with most messages)
-        loudmouth = "None"
-        loudmouth_count = 0
-        if self.stats['user_messages']:
-            loudmouth = max(self.stats['user_messages'], key=self.stats['user_messages'].get)
-            loudmouth_count = self.stats['user_messages'][loudmouth]
+        # Get monthly stats
+        monthly_stats = self.get_monthly_stats()
         
-        return f"PyIRCBot Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']}, Loudmouth: {loudmouth} ({loudmouth_count} messages)"
+        # Find the loudmouth (user with most messages) for current month
+        monthly_loudmouth = "None"
+        monthly_loudmouth_count = 0
+        if monthly_stats['user_messages']:
+            monthly_loudmouth = max(monthly_stats['user_messages'], key=monthly_stats['user_messages'].get)
+            monthly_loudmouth_count = monthly_stats['user_messages'][monthly_loudmouth]
+        
+        # Find the overall loudmouth (user with most messages)
+        overall_loudmouth = "None"
+        overall_loudmouth_count = 0
+        if self.stats['user_messages']:
+            overall_loudmouth = max(self.stats['user_messages'], key=self.stats['user_messages'].get)
+            overall_loudmouth_count = self.stats['user_messages'][overall_loudmouth]
+        
+        return f"PyIRCBot Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']} | {self.current_month}: Messages: {monthly_stats['messages_received']}, Commands: {monthly_stats['commands_processed']}, Loudmouth: {monthly_loudmouth} ({monthly_loudmouth_count} messages)"
 
     def cmd_google(self, sender, message):
         """Google search command with top 3 results using DuckDuckGo API"""
@@ -564,16 +641,17 @@ class PyIRCBot:
             return "Sorry, search failed."
 
     def cmd_topusers(self, sender, message):
-        """Handle the .topusers command to show top 3 users by message count"""
-        if self.stats['user_messages']:
-            top_users = sorted(self.stats['user_messages'].items(), key=lambda x: x[1], reverse=True)[:3]
-            response = "Top 3 users: "
+        """Handle the .topusers command to show top 3 users by message count for current month"""
+        monthly_stats = self.get_monthly_stats()
+        if monthly_stats['user_messages']:
+            top_users = sorted(monthly_stats['user_messages'].items(), key=lambda x: x[1], reverse=True)[:3]
+            response = f"Top 3 users for {self.current_month}: "
             for user, count in top_users:
                 response += f"{user} ({count} messages), "
             response = response.rstrip(', ')  # Remove trailing comma and space
         else:
-            response = "No user data available."
-        self.send_message(self.channel, response)  # Assuming send_message is the method to reply in the channel
+            response = f"No user data available for {self.current_month}."
+        return response
 
     def extract_links(self, message):
         """Extract URLs from message"""

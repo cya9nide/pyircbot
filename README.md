@@ -4,29 +4,31 @@ A Python-based IRC bot designed for IRC servers with configurable server, channe
 WIP - .google not working as intended - might get to that.  Weather using weatherapi.com API working.
 Only tested with Gamesurge network. 
 
+## Available Commands
+
+- `.weather [location]`: Get current weather information (supports city, state/country).
+- `.stats`: Show bot statistics including uptime and monthly loudmouth (user with most messages in current month).
+- `.topusers`: List the top 3 users who have sent the most messages in the channel for the current month.
+- `.google [query]`: Google search with top 3 results (e.g., `.google python tutorial`).
+- `.dice [number]`: Roll dice (e.g., `.dice 20` for a 20-sided die).
+- `.8ball [question]`: Ask the magic 8-ball a question.
+- `.joke`: Get a random joke.
+- `.time`: Show current time.
+- `.ping`: Test bot response time.
+- `.help`: Show available commands.
+
 ## Features
 
-- **Basic IRC Functionality**: Connects to IRC server, joins channels, responds to messages
-- **Command System**: Responds to various commands with `.` prefix
-- **Logging**: Comprehensive logging to both file and console
-- **Statistics**: Tracks bot usage and uptime
-- **Error Handling**: Robust error handling and graceful shutdown
+- **Monthly Statistics Tracking**: The bot tracks user activity on a monthly basis, with automatic log rotation at the start of each month.
+- **Loudmouth Detection**: Identifies the user with the most messages in the current month.
+- **Top Users**: Shows the top 3 most active users for the current month.
+- **Weather Integration**: Get current weather information for any location.
+- **Search Integration**: Google search functionality using DuckDuckGo API.
+- **Log Rotation**: Automatic monthly log archiving to keep logs organized.
 
-## Commands
+## Log Files
 
-| Command | Description |
-|---------|-------------|
-| `.help` | Shows available commands |
-| `.time` | Shows current date and time |
-| `.ping` | Responds with "Pong!" |
-| `.dice` | Rolls a 6-sided die (or custom: `.dice 2d20`) |
-| `.8ball` | Magic 8-ball responses |
-| `.weather` | Current weather info (supports city, state/country) |
-| `.weather forecast` | Weather forecast (hours/days) |
-| `.joke` | Tells a random joke |
-| `.stats` | Shows bot statistics and uptime |
-| `.google` | Google search with top 3 results (e.g., `.google python tutorial`) |
-| `.topusers` | List the top 3 users who have sent the most messages in the channel. |
+The bot creates monthly log files in the format `pyircbot_MM-YYYY.log` (e.g., `pyircbot_08-2025.log`). When a new month begins, the previous month's log is automatically archived as `pyircbot_MM-YYYY_archive.log`.
 
 ## Installation
 
