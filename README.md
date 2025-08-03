@@ -26,6 +26,7 @@ Only tested with Gamesurge network.
 | `.joke` | Tells a random joke |
 | `.stats` | Shows bot statistics and uptime |
 | `.google` | Google search with top 3 results (e.g., `.google python tutorial`) |
+| `.topusers` | List the top 3 users who have sent the most messages in the channel. |
 
 ## Installation
 

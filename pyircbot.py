@@ -58,7 +58,8 @@ class PyIRCBot:
             '.weather': self.cmd_weather,
             '.joke': self.cmd_joke,
             '.stats': self.cmd_stats,
-            '.google': self.cmd_google
+            '.google': self.cmd_google,
+            '.topusers': self.cmd_topusers
         }
         
         # Bot statistics
@@ -561,6 +562,18 @@ class PyIRCBot:
         except Exception as e:
             self.logger.error(f"Search error: {e}")
             return "Sorry, search failed."
+
+    def cmd_topusers(self, sender, message):
+        """Handle the .topusers command to show top 3 users by message count"""
+        if self.stats['user_messages']:
+            top_users = sorted(self.stats['user_messages'].items(), key=lambda x: x[1], reverse=True)[:3]
+            response = "Top 3 users: "
+            for user, count in top_users:
+                response += f"{user} ({count} messages), "
+            response = response.rstrip(', ')  # Remove trailing comma and space
+        else:
+            response = "No user data available."
+        self.send_message(self.channel, response)  # Assuming send_message is the method to reply in the channel
 
     def extract_links(self, message):
         """Extract URLs from message"""
