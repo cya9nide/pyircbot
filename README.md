@@ -232,8 +232,6 @@ For weather, news, or other external data:
 - No sensitive information is logged
 - The bot doesn't store user data
 - All responses are public in the channel
-- The `.env` file is automatically ignored by git to protect sensitive information
-- Never commit your `.env` file to version control
 
 ## License
 
