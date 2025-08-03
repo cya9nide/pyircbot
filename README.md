@@ -85,7 +85,7 @@ The bot uses environment variables for configuration. You can set these up in tw
    BOT_REALNAME=your_bot_realname_here
    
    # Optional: Weather API Key
-   # WEATHER_API_KEY=your_openweathermap_api_key_here
+   # WEATHER_API_KEY=your_weatherapi.com_api_key_here
    ```
 
 ### Option 2: Direct Code Modification
