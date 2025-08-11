@@ -5,6 +5,9 @@ pyircbot.log
 pyircbot_*.log
 pyircbot_*_archive.log
 
+# Runtime data directory (contains persistent logs)
+data/
+
 # Environment files
 .env
 

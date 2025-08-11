@@ -25,6 +25,7 @@ Only tested with Gamesurge network.
 - **Weather Integration**: Get current weather information for any location.
 - **Search Integration**: Google search functionality using DuckDuckGo API.
 - **Log Rotation**: Automatic monthly log archiving to keep logs organized.
+- **Configurable Log Directory**: Support for custom log directory via LOG_DIR environment variable.
 
 ## Log Files
 
@@ -44,13 +45,13 @@ The bot creates monthly log files in the format `pyircbot_MM-YYYY.log` (e.g., `p
    pip3 install -r requirements.txt
    ```
 
-3. **Set up environment variables**
+3. **Set up environment variables (REQUIRED)**
    ```bash
    # Copy the example environment file
    cp env.example .env
    
    # Edit the .env file with your desired settings
-   # IMPORTANT: Replace all placeholder values with your actual settings
+   # IMPORTANT: You MUST set IRC_SERVER, IRC_CHANNEL, BOT_NICKNAME, BOT_USERNAME, and BOT_REALNAME
    vi .env  # or use your preferred editor
    ```
 
@@ -76,17 +77,20 @@ The bot uses environment variables for configuration. You can set these up in tw
    ```
 
 2. **Edit the `.env` file** with your desired settings:
-   **⚠️ IMPORTANT**: Replace all placeholder values (like `your_irc_server_here`) with your actual configuration values.
+   **⚠️ IMPORTANT**: You MUST set the required values (IRC_SERVER, IRC_CHANNEL, BOT_NICKNAME, BOT_USERNAME, BOT_REALNAME) with your actual configuration values.
    ```bash
    # IRC Server Settings
-   IRC_SERVER=your_irc_server_here
+   IRC_SERVER=irc.gamesurge.net
    IRC_PORT=6667
-   IRC_CHANNEL=your_channel_here
+   IRC_CHANNEL=#rpg
    
    # Bot Identity
-   BOT_NICKNAME=your_bot_nickname_here
-   BOT_USERNAME=your_bot_username_here
-   BOT_REALNAME=your_bot_realname_here
+   BOT_NICKNAME=YourBotName
+   BOT_USERNAME=yourbot
+   BOT_REALNAME=Your IRC Bot
+   
+   # Logging Settings (optional)
+   # LOG_DIR=./data  # Directory for log files (defaults to current directory)
    
    # Optional: Weather API Key
    # WEATHER_API_KEY=your_weatherapi.com_api_key_here
@@ -111,12 +115,13 @@ To modify these settings directly in code, edit the `PyIRCBot` class initializat
 
 | Environment Variable | Default Value | Description |
 |---------------------|---------------|-------------|
-| `IRC_SERVER` | `your_irc_server_here` | IRC server address |
+| `IRC_SERVER` | (required) | IRC server address |
 | `IRC_PORT` | `6667` | IRC server port |
-| `IRC_CHANNEL` | `your_channel_here` | Channel to join |
-| `BOT_NICKNAME` | `your_bot_nickname_here` | Bot's nickname |
-| `BOT_USERNAME` | `your_bot_username_here` | Bot's username |
-| `BOT_REALNAME` | `your_bot_realname_here` | Bot's real name |
+| `IRC_CHANNEL` | (required) | Channel to join |
+| `BOT_NICKNAME` | (required) | Bot's nickname |
+| `BOT_USERNAME` | (required) | Bot's username |
+| `BOT_REALNAME` | (required) | Bot's real name |
+| `LOG_DIR` | `.` | Directory for log files |
 | `WEATHER_API_KEY` | (none) | WeatherAPI.com API key for weather features |
 
 ### Advanced Configuration

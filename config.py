@@ -7,14 +7,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # IRC Server Settings
-IRC_SERVER = os.getenv('IRC_SERVER', 'your_irc_server_here')
+IRC_SERVER = os.getenv('IRC_SERVER')
 IRC_PORT = int(os.getenv('IRC_PORT', '6667'))
-IRC_CHANNEL = os.getenv('IRC_CHANNEL', 'your_channel_here')
+IRC_CHANNEL = os.getenv('IRC_CHANNEL')
 
 # Bot Identity
-BOT_NICKNAME = os.getenv('BOT_NICKNAME', 'your_bot_nickname_here')
-BOT_USERNAME = os.getenv('BOT_USERNAME', 'your_bot_username_here')
-BOT_REALNAME = os.getenv('BOT_REALNAME', 'your_bot_realname_here')
+BOT_NICKNAME = os.getenv('BOT_NICKNAME')
+BOT_USERNAME = os.getenv('BOT_USERNAME')
+BOT_REALNAME = os.getenv('BOT_REALNAME')
 
 # Logging Settings
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')  # DEBUG, INFO, WARNING, ERROR, CRITICAL

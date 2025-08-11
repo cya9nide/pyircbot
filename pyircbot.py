@@ -72,10 +72,19 @@ class PyIRCBot:
                 }
             }
         }
+        
+        # Reconstruct stats from existing logs
+        self.reconstruct_stats_from_logs()
 
     def setup_logging(self):
         """Setup logging with monthly rotation"""
-        log_filename = f'pyircbot_{self.current_month}.log'
+        # Get log directory from environment variable or use current directory
+        log_dir = os.getenv('LOG_DIR', '.')
+        
+        # Create log directory if it doesn't exist
+        os.makedirs(log_dir, exist_ok=True)
+        
+        log_filename = os.path.join(log_dir, f'pyircbot_{self.current_month}.log')
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
@@ -86,16 +95,72 @@ class PyIRCBot:
         )
         self.logger = logging.getLogger(__name__)
 
+    def reconstruct_stats_from_logs(self):
+        """Reconstruct statistics from existing log files"""
+        log_dir = os.getenv('LOG_DIR', '.')
+        
+        # Get current month log file
+        current_log_file = os.path.join(log_dir, f'pyircbot_{self.current_month}.log')
+        
+        if os.path.exists(current_log_file):
+            try:
+                with open(current_log_file, 'r') as f:
+                    for line in f:
+                        # Parse log lines to reconstruct stats
+                        if ' - INFO - <' in line and '> ' in line:
+                            # Extract user and message
+                            parts = line.split(' - INFO - <')
+                            if len(parts) == 2:
+                                user_message_part = parts[1]
+                                if '> ' in user_message_part:
+                                    user_end = user_message_part.find('> ')
+                                    user = user_message_part[:user_end]
+                                    message = user_message_part[user_end + 2:].strip()
+                                    
+                                    # Count messages
+                                    self.stats['messages_received'] += 1
+                                    
+                                    # Track user messages
+                                    if user not in self.stats['user_messages']:
+                                        self.stats['user_messages'][user] = 0
+                                    self.stats['user_messages'][user] += 1
+                                    
+                                    # Track monthly stats
+                                    if self.current_month not in self.stats['monthly_stats']:
+                                        self.stats['monthly_stats'][self.current_month] = {
+                                            'messages_received': 0,
+                                            'commands_processed': 0,
+                                            'user_messages': {}
+                                        }
+                                    
+                                    self.stats['monthly_stats'][self.current_month]['messages_received'] += 1
+                                    
+                                    if user not in self.stats['monthly_stats'][self.current_month]['user_messages']:
+                                        self.stats['monthly_stats'][self.current_month]['user_messages'][user] = 0
+                                    self.stats['monthly_stats'][self.current_month]['user_messages'][user] += 1
+                                    
+                                    # Count commands
+                                    if message.startswith('.'):
+                                        self.stats['commands_processed'] += 1
+                                        self.stats['monthly_stats'][self.current_month]['commands_processed'] += 1
+                
+                self.logger.info(f"Reconstructed stats from log: {self.stats['messages_received']} messages, {self.stats['commands_processed']} commands")
+            except Exception as e:
+                self.logger.error(f"Error reconstructing stats from logs: {e}")
+
     def check_month_change(self):
         """Check if month has changed and roll logs if necessary"""
         current_month = datetime.now().strftime('%m-%Y')
         if current_month != self.current_month:
             self.logger.info(f"Month changed from {self.current_month} to {current_month}. Rolling logs and stats.")
             
+            # Get log directory from environment variable or use current directory
+            log_dir = os.getenv('LOG_DIR', '.')
+            
             # Archive old log file
-            old_log_filename = f'pyircbot_{self.current_month}.log'
+            old_log_filename = os.path.join(log_dir, f'pyircbot_{self.current_month}.log')
             if os.path.exists(old_log_filename):
-                archive_filename = f'pyircbot_{self.current_month}_archive.log'
+                archive_filename = os.path.join(log_dir, f'pyircbot_{self.current_month}_archive.log')
                 os.rename(old_log_filename, archive_filename)
                 self.logger.info(f"Archived old log to {archive_filename}")
             
@@ -586,7 +651,7 @@ class PyIRCBot:
             overall_loudmouth = max(self.stats['user_messages'], key=self.stats['user_messages'].get)
             overall_loudmouth_count = self.stats['user_messages'][overall_loudmouth]
         
-        return f"PyIRCBot Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']} | {self.current_month}: Messages: {monthly_stats['messages_received']}, Commands: {monthly_stats['commands_processed']}, Loudmouth: {monthly_loudmouth} ({monthly_loudmouth_count} messages)"
+        return f"{self.nickname} Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']} | {self.current_month}: Messages: {monthly_stats['messages_received']}, Commands: {monthly_stats['commands_processed']}, Loudmouth: {monthly_loudmouth} ({monthly_loudmouth_count} messages)"
 
     def cmd_google(self, sender, message):
         """Google search command with top 3 results using DuckDuckGo API"""
@@ -788,7 +853,7 @@ class PyIRCBot:
         """Clean up bot resources"""
         self.running = False
         if self.socket:
-            self.send_raw("QUIT :PyIRCBot signing off!")
+            self.send_raw(f"QUIT :{self.nickname} signing off!")
             self.socket.close()
         self.logger.info("Bot shutdown complete")
 
