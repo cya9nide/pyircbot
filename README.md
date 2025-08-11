@@ -1,15 +1,14 @@
 # PyIRCBot - IRC Bot
 
-A Python-based IRC bot designed for IRC servers with configurable server, channel, and bot identity.
-WIP - .google not working as intended - might get to that.  Weather using weatherapi.com API working.
-Only tested with Gamesurge network. 
+A Python-based IRC bot designed for IRC servers with configurable identity.
+WIP - Weather using weatherapi.com API working.
 
 ## Available Commands
 
 - `.weather [location]`: Get current weather information (supports city, state/country).
 - `.stats`: Show bot statistics including uptime and monthly loudmouth (user with most messages in current month).
 - `.topusers`: List the top 3 users who have sent the most messages in the channel for the current month.
-- `.google [query]`: Google search with top 3 results (e.g., `.google python tutorial`).
+  (search command removed)
 - `.dice [number]`: Roll dice (e.g., `.dice 20` for a 20-sided die).
 - `.8ball [question]`: Ask the magic 8-ball a question.
 - `.joke`: Get a random joke.
@@ -23,7 +22,7 @@ Only tested with Gamesurge network.
 - **Loudmouth Detection**: Identifies the user with the most messages in the current month.
 - **Top Users**: Shows the top 3 most active users for the current month.
 - **Weather Integration**: Get current weather information for any location.
-- **Search Integration**: Google search functionality using DuckDuckGo API.
+  (search integration removed)
 - **Log Rotation**: Automatic monthly log archiving to keep logs organized.
 - **Configurable Log Directory**: Support for custom log directory via LOG_DIR environment variable.
 
@@ -51,7 +50,7 @@ The bot creates monthly log files in the format `pyircbot_MM-YYYY.log` (e.g., `p
    cp env.example .env
    
    # Edit the .env file with your desired settings
-   # IMPORTANT: You MUST set IRC_SERVER, IRC_CHANNEL, BOT_NICKNAME, BOT_USERNAME, and BOT_REALNAME
+   # IMPORTANT: Set the required values as described in env.example
    vi .env  # or use your preferred editor
    ```
 
@@ -76,48 +75,16 @@ The bot uses environment variables for configuration. You can set these up in tw
    cp env.example .env
    ```
 
-2. **Edit the `.env` file** with your desired settings:
-   **⚠️ IMPORTANT**: You MUST set the required values (IRC_SERVER, IRC_CHANNEL, BOT_NICKNAME, BOT_USERNAME, BOT_REALNAME) with your actual configuration values.
-   ```bash
-   # IRC Server Settings
-   IRC_SERVER=irc.gamesurge.net
-   IRC_PORT=6667
-   IRC_CHANNEL=#rpg
-   
-   # Bot Identity
-   BOT_NICKNAME=YourBotName
-   BOT_USERNAME=yourbot
-   BOT_REALNAME=Your IRC Bot
-   
-   # Logging Settings (optional)
-   # LOG_DIR=./data  # Directory for log files (defaults to current directory)
-   
-   # Optional: Weather API Key
-   # WEATHER_API_KEY=your_weatherapi.com_api_key_here
-   ```
+2. **Edit the `.env` file** with your desired settings. Refer to `env.example` for the list of variables. Do not commit your `.env` file.
 
 ### Option 2: Direct Code Modification
 
-To modify these settings directly in code, edit the `PyIRCBot` class initialization in `pyircbot.py`:
-
- ```python
- bot = PyIRCBot(
-     server="your_irc_server_here",
-     port=6667,
-     channel="your_channel_here",
-     nickname="your_bot_nickname_here",
-     username="your_bot_username_here",
-     realname="your_bot_realname_here"
- )
- ```
+Advanced users may adjust defaults in code, but using `.env` is recommended.
 
 ### Available Configuration Options
 
 | Environment Variable | Default Value | Description |
 |---------------------|---------------|-------------|
-| `IRC_SERVER` | (required) | IRC server address |
-| `IRC_PORT` | `6667` | IRC server port |
-| `IRC_CHANNEL` | (required) | Channel to join |
 | `BOT_NICKNAME` | (required) | Bot's nickname |
 | `BOT_USERNAME` | (required) | Bot's username |
 | `BOT_REALNAME` | (required) | Bot's real name |
@@ -144,14 +111,12 @@ The system will use values in this priority order:
    ./start_bot.sh
    ```
 
-2. **Join your configured channel** on your configured IRC server
-
-3. **Use commands** in the channel:
+2. **Use commands** in the channel:
    - Type `.help` to see all available commands
    - Try `.dice 2d20` for custom dice rolls
    - Use `.8ball` for fortune telling
    - Check `.stats` for bot information
-   - Use `.google <search term>` for Google searches
+  (search command removed)
    - Use `.weather <city>` for current weather
    - Use `.weather <city> forecast <hours/days>` for forecasts
 
@@ -183,8 +148,6 @@ Press `Ctrl+C` to gracefully stop the bot. It will:
 
 ### Connection Issues
 - Ensure you have internet connectivity
-- Check if your configured IRC server is accessible
-- Verify your configured channel exists
 - Check your `.env` file configuration
 
 ### Environment Variable Issues

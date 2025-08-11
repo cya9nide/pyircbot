@@ -54,7 +54,6 @@ class PyIRCBot:
             '.weather': self.cmd_weather,
             '.joke': self.cmd_joke,
             '.stats': self.cmd_stats,
-            '.google': self.cmd_google,
             '.topusers': self.cmd_topusers
         }
         
@@ -313,7 +312,7 @@ class PyIRCBot:
     # Bot command handlers
     def cmd_help(self, sender, message):
         """Show available commands"""
-        help_text = "Available commands: .help, .time, .ping, .dice, .8ball, .weather, .joke, .stats, .google"
+        help_text = "Available commands: .help, .time, .ping, .dice, .8ball, .weather, .joke, .stats"
         return help_text
 
     def cmd_time(self, sender, message):
@@ -653,57 +652,7 @@ class PyIRCBot:
         
         return f"{self.nickname} Stats - Uptime: {uptime_str}, Messages: {self.stats['messages_received']}, Commands: {self.stats['commands_processed']} | {self.current_month}: Messages: {monthly_stats['messages_received']}, Commands: {monthly_stats['commands_processed']}, Loudmouth: {monthly_loudmouth} ({monthly_loudmouth_count} messages)"
 
-    def cmd_google(self, sender, message):
-        """Google search command with top 3 results using DuckDuckGo API"""
-        try:
-            query = message.replace('.google', '').strip()
-            if not query:
-                return "Usage: .google <search term>"
-            
-            # Use DuckDuckGo Instant Answer API (no API key required)
-            ddg_url = "https://api.duckduckgo.com/"
-            params = {
-                'q': query,
-                'format': 'json',
-                'no_html': '1',
-                'skip_disambig': '1'
-            }
-            
-            response = requests.get(ddg_url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            results = []
-            
-            # Add instant answer if available
-            if data.get('AbstractText'):
-                abstract = data['AbstractText'][:100] + "..." if len(data['AbstractText']) > 100 else data['AbstractText']
-                results.append(f"1. {abstract} - {data.get('AbstractURL', 'No URL')}")
-            
-            # Add related topics
-            for i, topic in enumerate(data.get('RelatedTopics', [])[:3-len(results)]):
-                if isinstance(topic, dict) and topic.get('Text'):
-                    text = topic['Text'][:80] + "..." if len(topic['Text']) > 80 else topic['Text']
-                    results.append(f"{len(results)+1}. {text}")
-            
-            # If we don't have enough results, add some generic suggestions
-            while len(results) < 3:
-                results.append(f"{len(results)+1}. Search for '{query}' on Google")
-            
-            if results:
-                return f"🔍 Search results for '{query}': {' | '.join(results)}"
-            else:
-                # Fallback to Google search URL
-                encoded_query = urllib.parse.quote(query)
-                return f"🔍 Search for '{query}': https://www.google.com/search?q={encoded_query}"
-                
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"Search API error: {e}")
-            encoded_query = urllib.parse.quote(query)
-            return f"🔍 Search for '{query}': https://www.google.com/search?q={encoded_query}"
-        except Exception as e:
-            self.logger.error(f"Search error: {e}")
-            return "Sorry, search failed."
+    # Search command removed per user request
 
     def cmd_topusers(self, sender, message):
         """Handle the .topusers command to show top 3 users by message count for current month"""

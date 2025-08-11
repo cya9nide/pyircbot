@@ -32,8 +32,7 @@ def test_bot_commands():
         (".weather London", "TestUser"),
         (".weather London forecast 3 hours", "TestUser"),
         (".weather London forecast 3 days", "TestUser"),
-        (".google python tutorial", "TestUser"),
-        (".google how to code", "TestUser"),
+        # (search command removed)
     ]
     
     # Test link parsing (Link detection temporarily disabled)
